@@ -21,7 +21,14 @@ harness = false
 [features]
 default = ["std", "binstart"]
 
-std = ["alloc", "log/std", "esp-idf-hal/std", "embedded-svc/std", "futures-io"]
+std = [
+    "alloc",
+    "log/std",
+    "esp-idf-hal/std",
+    "embedded-svc/std",
+    "embedded-svc/mqtt_protocol_v5",
+    "futures-io",
+]
 embassy-time-driver = ["dep:embassy-time-driver", "embassy-time-queue-utils"]
 alloc = ["esp-idf-hal/alloc", "embedded-svc/alloc", "uncased/alloc"]
 nightly = ["embedded-svc/nightly", "esp-idf-hal/nightly"]
