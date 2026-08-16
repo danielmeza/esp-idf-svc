@@ -350,7 +350,8 @@ impl<'a> TryFrom<&'a MqttClientConfiguration<'a>>
                 c_conf.credentials.authentication.key_password_len = pass.len() as _;
             }
 
-            c_conf.credentials.authentication.ds_data = conf.ds_data.unwrap_or(core::ptr::null_mut());
+            c_conf.credentials.authentication.ds_data =
+                conf.ds_data.unwrap_or(core::ptr::null_mut());
         }
 
         if let Some(outbox_limit) = conf.outbox_limit {
