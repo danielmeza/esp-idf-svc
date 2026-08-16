@@ -26,13 +26,14 @@ std = [
     "log/std",
     "esp-idf-hal/std",
     "embedded-svc/std",
-    "embedded-svc/mqtt_protocol_v5",
     "futures-io",
 ]
 embassy-time-driver = ["dep:embassy-time-driver", "embassy-time-queue-utils"]
 alloc = ["esp-idf-hal/alloc", "embedded-svc/alloc", "uncased/alloc"]
 nightly = ["embedded-svc/nightly", "esp-idf-hal/nightly"]
 experimental = ["embedded-svc/experimental", "esp-idf-hal/experimental"]
+# MQTT 5.0 client (`mqtt::client5`). Requires `CONFIG_MQTT_PROTOCOL_5=y` in sdkconfig.
+mqtt_protocol_v5 = ["std", "embedded-svc/mqtt_protocol_v5"]
 
 # Propagated esp-idf-hal features
 critical-section = ["esp-idf-hal/critical-section"]

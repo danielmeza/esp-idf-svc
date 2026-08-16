@@ -2,7 +2,7 @@
 use core::ffi::c_void;
 use core::fmt::Debug;
 use core::{slice, time};
-#[cfg(all(esp_idf_mqtt_protocol_5, feature = "std"))]
+#[cfg(all(esp_idf_mqtt_protocol_5, feature = "mqtt_protocol_v5"))]
 use std::vec::Vec;
 
 extern crate alloc;
@@ -11,13 +11,13 @@ use alloc::sync::Arc;
 
 use embedded_svc::mqtt::client::{asynch, Client, Connection, Enqueue, ErrorType, Publish};
 
-#[cfg(all(esp_idf_mqtt_protocol_5, feature = "std"))]
+#[cfg(all(esp_idf_mqtt_protocol_5, feature = "mqtt_protocol_v5"))]
 use embedded_svc::mqtt::client5::{MessageMetadata, SubscribePropertyConfig, UserPropertyItem};
 
-#[cfg(all(esp_idf_mqtt_protocol_5, feature = "std"))]
+#[cfg(all(esp_idf_mqtt_protocol_5, feature = "mqtt_protocol_v5"))]
 use embedded_svc::mqtt::client5::UserPropertyList;
 
-#[cfg(all(esp_idf_mqtt_protocol_5, feature = "std"))]
+#[cfg(all(esp_idf_mqtt_protocol_5, feature = "mqtt_protocol_v5"))]
 use crate::mqtt::client5::EspUserPropertyList;
 
 use crate::private::unblocker::Unblocker;
@@ -618,7 +618,7 @@ impl<'a> EspMqttClient<'a> {
         self.subscribe_cstr(to_cstring_arg(topic)?.as_c_str(), qos)
     }
 
-    #[cfg(all(esp_idf_mqtt_protocol_5, feature = "std"))]
+    #[cfg(all(esp_idf_mqtt_protocol_5, feature = "mqtt_protocol_v5"))]
     pub fn subscribe_with_config<'ab>(
         &mut self,
         topic: &str,
@@ -632,7 +632,7 @@ impl<'a> EspMqttClient<'a> {
         self.unsubscribe_cstr(to_cstring_arg(topic)?.as_c_str())
     }
 
-    #[cfg(all(esp_idf_mqtt_protocol_5, feature = "std"))]
+    #[cfg(all(esp_idf_mqtt_protocol_5, feature = "mqtt_protocol_v5"))]
     pub fn unsubscribe_with_config<'ab>(
         &mut self,
         topic: &str,
@@ -695,7 +695,7 @@ impl<'a> EspMqttClient<'a> {
         res
     }
 
-    #[cfg(all(esp_idf_mqtt_protocol_5, feature = "std"))]
+    #[cfg(all(esp_idf_mqtt_protocol_5, feature = "mqtt_protocol_v5"))]
     pub fn subscribe_with_config_cstr(
         &mut self,
         topic: &core::ffi::CStr,
@@ -727,7 +727,7 @@ impl<'a> EspMqttClient<'a> {
         Self::check(unsafe { esp_mqtt_client_unsubscribe(self.raw_client, topic.as_ptr()) })
     }
 
-    #[cfg(all(esp_idf_mqtt_protocol_5, feature = "std"))]
+    #[cfg(all(esp_idf_mqtt_protocol_5, feature = "mqtt_protocol_v5"))]
     pub fn unsubscribe_with_config_cstr<'ab>(
         &mut self,
         topic: &core::ffi::CStr,
@@ -1255,7 +1255,7 @@ impl<'a> EspMqttEvent<'a> {
         }
     }
 
-    #[cfg(all(esp_idf_mqtt_protocol_5, feature = "std"))]
+    #[cfg(all(esp_idf_mqtt_protocol_5, feature = "mqtt_protocol_v5"))]
     pub fn metadata<'ab>(&self) -> Option<MessageMetadata<'ab>> {
         let ptr = self.0.property;
 
@@ -1300,7 +1300,7 @@ impl<'a> EspMqttEvent<'a> {
         Some(event_property)
     }
 
-    #[cfg(all(esp_idf_mqtt_protocol_5, feature = "std"))]
+    #[cfg(all(esp_idf_mqtt_protocol_5, feature = "mqtt_protocol_v5"))]
     fn user_properties<'ab>(&self) -> Result<Vec<UserPropertyItem<'ab>>, EspError> {
         let count = self.user_properties_count();
         if count == 0 {
@@ -1348,12 +1348,12 @@ impl Event for EspMqttEvent<'_> {
         EspMqttEvent::payload(self)
     }
 
-    #[cfg(all(esp_idf_mqtt_protocol_5, feature = "std"))]
+    #[cfg(all(esp_idf_mqtt_protocol_5, feature = "mqtt_protocol_v5"))]
     fn metadata<'a>(&self) -> Option<MessageMetadata<'a>> {
         EspMqttEvent::metadata(self)
     }
 
-    #[cfg(all(esp_idf_mqtt_protocol_5, feature = "std"))]
+    #[cfg(all(esp_idf_mqtt_protocol_5, feature = "mqtt_protocol_v5"))]
     fn user_properties<'ab>(&self) -> Result<Vec<UserPropertyItem<'ab>>, Self::Error> {
         EspMqttEvent::user_properties(self)
     }

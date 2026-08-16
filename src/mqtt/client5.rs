@@ -24,7 +24,6 @@ use embedded_svc::mqtt::{
         UserPropertyList,
     },
 };
-#[cfg(all(esp_idf_mqtt_protocol_5, feature = "std"))]
 use embedded_svc::mqtt::{
     client::{MessageId, QoS},
     client5::{PublishPropertyConfig, SubscribePropertyConfig},
