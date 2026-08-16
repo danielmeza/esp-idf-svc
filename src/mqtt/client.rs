@@ -106,6 +106,7 @@ pub struct MqttClientConfiguration<'a> {
     pub client_certificate: Option<X509<'static>>,
     pub private_key: Option<X509<'static>>,
     pub private_key_password: Option<&'a str>,
+    pub ds_data: Option<*mut core::ffi::c_void>, /* carrier of handle for digital signature parameters */
 
     #[cfg(all(esp_idf_esp_tls_psk_verification, feature = "alloc"))]
     pub psk: Option<Psk<'a>>,
@@ -149,6 +150,7 @@ impl Default for MqttClientConfiguration<'_> {
             client_certificate: None,
             private_key: None,
             private_key_password: None,
+            ds_data: None,
 
             #[cfg(all(esp_idf_esp_tls_psk_verification, feature = "alloc"))]
             psk: None,
@@ -347,6 +349,8 @@ impl<'a> TryFrom<&'a MqttClientConfiguration<'a>>
                 c_conf.credentials.authentication.key_password = pass.as_ptr() as _;
                 c_conf.credentials.authentication.key_password_len = pass.len() as _;
             }
+
+            c_conf.credentials.authentication.ds_data = conf.ds_data.unwrap_or(core::ptr::null_mut());
         }
 
         if let Some(outbox_limit) = conf.outbox_limit {
