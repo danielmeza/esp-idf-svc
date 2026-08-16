@@ -594,37 +594,8 @@ impl<'a> EspMqtt5Client<'a> {
         config: Option<SubscribePropertyConfig<'ab>>,
     ) -> Result<MessageId, EspError> {
         let property = EspSubscribePropertyConfig::try_from(config)?;
-        if config.is_some() {
-            // If no config is provided, we use an empty config
-            Self::check(unsafe {
-                esp_mqtt5_client_set_subscribe_property(self.raw_client, &property.0 as *const _)
-            })?;
-        }
-
-        #[cfg(any(
-            esp_idf_version_major = "4",
-            all(esp_idf_version_major = "5", esp_idf_version_minor = "0"),
-            all(
-                esp_idf_version_major = "5",
-                esp_idf_version_minor = "1",
-                any(esp_idf_version_patch = "0", esp_idf_version_patch = "1")
-            )
-        ))]
         let res = Self::check(unsafe {
-            esp_mqtt_client_subscribe(self.raw_client, topic.as_ptr(), qos as _)
-        });
-
-        #[cfg(not(any(
-            esp_idf_version_major = "4",
-            all(esp_idf_version_major = "5", esp_idf_version_minor = "0"),
-            all(
-                esp_idf_version_major = "5",
-                esp_idf_version_minor = "1",
-                any(esp_idf_version_patch = "0", esp_idf_version_patch = "1")
-            )
-        )))]
-        let res = Self::check(unsafe {
-            esp_mqtt_client_subscribe_single(self.raw_client, topic.as_ptr(), qos as _)
+            esp_mqtt_client_subscribe5(self.raw_client, topic.as_ptr(), qos as _, &property.0)
         });
 
         res
@@ -636,13 +607,9 @@ impl<'a> EspMqtt5Client<'a> {
         config: Option<UnsubscribePropertyConfig<'ab>>,
     ) -> Result<MessageId, EspError> {
         let property = EspUnsubscribePropertyConfig::try_from(config)?;
-        if config.is_some() {
-            // If no config is provided, we use an empty config
-            Self::check(unsafe {
-                esp_mqtt5_client_set_unsubscribe_property(self.raw_client, &property.0 as *const _)
-            })?;
-        }
-        Self::check(unsafe { esp_mqtt_client_unsubscribe(self.raw_client, topic.as_ptr()) })
+        Self::check(unsafe {
+            esp_mqtt_client_unsubscribe5(self.raw_client, topic.as_ptr(), &property.0)
+        })
     }
 
     pub fn publish_cstr<'ab>(
@@ -664,25 +631,20 @@ impl<'a> EspMqtt5Client<'a> {
 
         let property = EspPublishPropertyConfig::try_from(config)?;
 
-        if config.is_some() {
-            Self::check(unsafe {
-                esp_mqtt5_client_set_publish_property(self.raw_client, &property.0 as *const _)
-            })?;
-        }
-
         let payload_ptr = match payload.len() {
             0 => core::ptr::null(),
             _ => payload.as_ptr(),
         };
 
         let result = Self::check(unsafe {
-            esp_mqtt_client_publish(
+            esp_mqtt_client_publish5(
                 self.raw_client,
                 topic.as_ptr(),
                 payload_ptr as _,
                 payload.len() as _,
                 qos as _,
                 retain as _,
+                &property.0,
             )
         });
         drop(property); // Ensure the property is dropped after use
