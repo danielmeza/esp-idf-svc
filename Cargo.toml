@@ -84,3 +84,6 @@ async-io = { version = "0.4", package = "async-io-mini", default-features = fals
 [patch.crates-io]
 esp-idf-sys = { git = "https://github.com/esp-rs/esp-idf-sys", branch = "master" }
 esp-idf-hal = { git = "https://github.com/esp-rs/esp-idf-hal", branch = "master" }
+# Needed for the `mqtt_protocol_v5` feature (the `mqtt::client5` traits), which is not in
+# a published embedded-svc release yet. Drop once embedded-svc is released with it.
+embedded-svc = { git = "https://github.com/esp-rs/embedded-svc", branch = "master" }
