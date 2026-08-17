@@ -702,13 +702,19 @@ impl<'a> EspMqttClient<'a> {
         qos: QoS,
         config: SubscribePropertyConfig<'_>,
     ) -> Result<MessageId, EspError> {
+        // `share_name` is a `&str`, which is not NUL-terminated: the C side runs
+        // `strlen()` on it, and `esp_mqtt5_client_set_subscribe_property` stores the
+        // pointer rather than copying. Keep an arena-owned CString alive across both
+        // the setter and the subscribe call below.
+        let mut cstrs = RawCstrs::new();
+
         let property = esp_mqtt5_subscribe_property_config_t {
             subscribe_id: config.subscribe_id,
             no_local_flag: config.no_local,
             retain_as_published_flag: config.retain_as_published,
             retain_handle: config.retain_handling,
             is_share_subscribe: config.share_name.is_some(),
-            share_name: config.share_name.map_or(core::ptr::null(), |s| s.as_ptr()),
+            share_name: cstrs.as_nptr(config.share_name)?,
             user_property: if let Some(ref user_properties) = config.user_properties {
                 EspUserPropertyList::from(user_properties).as_ptr()
             } else {
@@ -733,9 +739,13 @@ impl<'a> EspMqttClient<'a> {
         topic: &core::ffi::CStr,
         config: SubscribePropertyConfig<'ab>,
     ) -> Result<MessageId, EspError> {
+        // See `subscribe_with_config_cstr`: `&str` is not NUL-terminated and the C
+        // setter keeps the pointer, so the CString must outlive the unsubscribe call.
+        let mut cstrs = RawCstrs::new();
+
         let property = esp_mqtt5_unsubscribe_property_config_t {
             is_share_subscribe: config.share_name.is_some(),
-            share_name: config.share_name.map_or(core::ptr::null(), |s| s.as_ptr()),
+            share_name: cstrs.as_nptr(config.share_name)?,
             user_property: if let Some(ref user_properties) = config.user_properties {
                 EspUserPropertyList::from(user_properties).as_ptr()
             } else {
