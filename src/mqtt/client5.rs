@@ -322,7 +322,7 @@ impl<'a> TryFrom<Option<UnsubscribePropertyConfig<'a>>> for EspUnsubscribeProper
         }
 
         let config = config.unwrap();
-        let cstrs = RawCstrs::new();
+        let mut cstrs = RawCstrs::new();
         let mut user_properties = EspUserPropertyList::new();
         if let Some(ref user_properties_items) = config.user_properties {
             user_properties.set_items(user_properties_items)?;
@@ -330,7 +330,9 @@ impl<'a> TryFrom<Option<UnsubscribePropertyConfig<'a>>> for EspUnsubscribeProper
 
         let property = esp_mqtt5_unsubscribe_property_config_t {
             is_share_subscribe: config.share_name.is_some(),
-            share_name: config.share_name.map_or(core::ptr::null(), |s| s.as_ptr()),
+            // `share_name` is a `&str`, which is not NUL-terminated: the C side runs
+            // `strlen()` on it. Copy it into the arena, which lives as long as `self`.
+            share_name: cstrs.as_nptr(config.share_name)?,
             user_property: user_properties.as_ptr(),
         };
         Ok(EspUnsubscribePropertyConfig(
