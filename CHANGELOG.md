@@ -44,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MQTT: Fix a crash when the LWT payload is empty (#597)
 
 ### Added
+- MQTT5: `client5` now uses the atomic per-message `publish5`/`subscribe5`/`unsubscribe5` APIs from ESP-IDF, so per-message user properties override the client-level ones instead of being ignored
 - Compatibility with ESP-IDF V5.4.x and V5.5.x
 - Logging configuration enhanced with a simpler setup where Rust logs can be configured to have a verbosity which is
   disconnected from the verbosity of the ESP-IDF native C logging (#593)

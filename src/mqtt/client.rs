@@ -107,15 +107,15 @@ pub struct MqttClientConfiguration<'a> {
     pub private_key: Option<X509<'static>>,
     pub private_key_password: Option<&'a str>,
 
-    #[cfg(all(esp_idf_esp_tls_psk_verification, feature = "alloc"))]
-    pub psk: Option<Psk<'a>>,
-    // pub alpn_protos: &'a [&'a str],
-    // pub use_secure_element: bool,
-
     /// Pointer to DS peripheral context (`esp_ds_data_ctx_t*`).
     /// When set, the DS peripheral handles TLS client signing in hardware
     /// without exposing the private key to software.
     pub ds_data: Option<*mut c_void>,
+
+    #[cfg(all(esp_idf_esp_tls_psk_verification, feature = "alloc"))]
+    pub psk: Option<Psk<'a>>,
+    // pub alpn_protos: &'a [&'a str],
+    // pub use_secure_element: bool,
 }
 
 impl Default for MqttClientConfiguration<'_> {
@@ -153,11 +153,10 @@ impl Default for MqttClientConfiguration<'_> {
             client_certificate: None,
             private_key: None,
             private_key_password: None,
+            ds_data: None,
 
             #[cfg(all(esp_idf_esp_tls_psk_verification, feature = "alloc"))]
             psk: None,
-
-            ds_data: None,
         }
     }
 }
@@ -354,11 +353,16 @@ impl<'a> TryFrom<&'a MqttClientConfiguration<'a>>
                 c_conf.credentials.authentication.key_password_len = pass.len() as _;
             }
         } else if let Some(cert) = conf.client_certificate {
-            // Client cert without software key (DS peripheral handles signing)
+            // A client certificate with NO software private key. This is the DS peripheral case:
+            // the key is sealed in hardware and never exists in software, so requiring one here
+            // would drop the certificate on the only configuration that needs it.
             c_conf.credentials.authentication.certificate = cert.as_esp_idf_raw_ptr() as _;
             c_conf.credentials.authentication.certificate_len = cert.as_esp_idf_raw_len();
         }
 
+        // Outside the private-key branch on purpose. esp-rs/esp-idf-svc#555: `private_key` and
+        // `ds_data` are MUTUALLY EXCLUSIVE, so applying ds_data only when a private key is present
+        // makes it unreachable. Left inside, hardware-backed mTLS silently sends no DS context.
         if let Some(ds_data) = conf.ds_data {
             c_conf.credentials.authentication.ds_data = ds_data;
         }
@@ -643,13 +647,19 @@ impl<'a> EspMqttClient<'a> {
         qos: QoS,
         config: SubscribePropertyConfig<'_>,
     ) -> Result<MessageId, EspError> {
+        // `share_name` is a `&str`, which is not NUL-terminated: the C side runs
+        // `strlen()` on it, and `esp_mqtt5_client_set_subscribe_property` stores the
+        // pointer rather than copying. Keep an arena-owned CString alive across both
+        // the setter and the subscribe call below.
+        let mut cstrs = RawCstrs::new();
+
         let property = esp_mqtt5_subscribe_property_config_t {
             subscribe_id: config.subscribe_id,
             no_local_flag: config.no_local,
             retain_as_published_flag: config.retain_as_published,
             retain_handle: config.retain_handling,
             is_share_subscribe: config.share_name.is_some(),
-            share_name: config.share_name.map_or(core::ptr::null(), |s| s.as_ptr()),
+            share_name: cstrs.as_nptr(config.share_name)?,
             user_property: if let Some(ref user_properties) = config.user_properties {
                 EspUserPropertyList::from(user_properties).as_ptr()
             } else {
@@ -674,9 +684,13 @@ impl<'a> EspMqttClient<'a> {
         topic: &core::ffi::CStr,
         config: SubscribePropertyConfig<'ab>,
     ) -> Result<MessageId, EspError> {
+        // See `subscribe_with_config_cstr`: `&str` is not NUL-terminated and the C
+        // setter keeps the pointer, so the CString must outlive the unsubscribe call.
+        let mut cstrs = RawCstrs::new();
+
         let property = esp_mqtt5_unsubscribe_property_config_t {
             is_share_subscribe: config.share_name.is_some(),
-            share_name: config.share_name.map_or(core::ptr::null(), |s| s.as_ptr()),
+            share_name: cstrs.as_nptr(config.share_name)?,
             user_property: if let Some(ref user_properties) = config.user_properties {
                 EspUserPropertyList::from(user_properties).as_ptr()
             } else {
