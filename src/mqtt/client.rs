@@ -111,7 +111,11 @@ pub struct MqttClientConfiguration<'a> {
     pub psk: Option<Psk<'a>>,
     // pub alpn_protos: &'a [&'a str],
     // pub use_secure_element: bool,
-    // void *ds_data;                          /*!< carrier of handle for digital signature parameters */
+
+    /// Pointer to DS peripheral context (`esp_ds_data_ctx_t*`).
+    /// When set, the DS peripheral handles TLS client signing in hardware
+    /// without exposing the private key to software.
+    pub ds_data: Option<*mut c_void>,
 }
 
 impl Default for MqttClientConfiguration<'_> {
@@ -152,6 +156,8 @@ impl Default for MqttClientConfiguration<'_> {
 
             #[cfg(all(esp_idf_esp_tls_psk_verification, feature = "alloc"))]
             psk: None,
+
+            ds_data: None,
         }
     }
 }
@@ -347,6 +353,14 @@ impl<'a> TryFrom<&'a MqttClientConfiguration<'a>>
                 c_conf.credentials.authentication.key_password = pass.as_ptr() as _;
                 c_conf.credentials.authentication.key_password_len = pass.len() as _;
             }
+        } else if let Some(cert) = conf.client_certificate {
+            // Client cert without software key (DS peripheral handles signing)
+            c_conf.credentials.authentication.certificate = cert.as_esp_idf_raw_ptr() as _;
+            c_conf.credentials.authentication.certificate_len = cert.as_esp_idf_raw_len();
+        }
+
+        if let Some(ds_data) = conf.ds_data {
+            c_conf.credentials.authentication.ds_data = ds_data;
         }
 
         if let Some(outbox_limit) = conf.outbox_limit {
