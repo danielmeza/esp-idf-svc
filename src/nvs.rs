@@ -414,7 +414,6 @@ impl<T: NvsPartitionId> EspNvs<T> {
 
         #[allow(unused_assignments)]
         let mut len = 0;
-
         match unsafe { nvs_get_blob(self.1, c_key.as_ptr(), ptr::null_mut(), &mut len as *mut _) } {
             ESP_ERR_NVS_NOT_FOUND => Ok(None),
             err => {

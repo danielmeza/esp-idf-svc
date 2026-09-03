@@ -65,7 +65,7 @@ esp-idf-hal = { version = "0.45", default-features = false }
 embassy-time-driver = { version = "0.2", optional = true, features = [
     "tick-hz-1_000_000",
 ] }
-embassy-time-queue-utils = { version = "0.1", optional = true }
+embassy-time-queue-utils = { version = "0.3", optional = true }
 embassy-futures = "0.1"
 embedded-storage = { version = "0.3", optional = true }
 futures-io = { version = "0.3", optional = true }

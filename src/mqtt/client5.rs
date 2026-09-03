@@ -653,7 +653,7 @@ impl<'a> EspMqtt5Client<'a> {
         payload: &[u8],
         config: Option<PublishPropertyConfig<'ab>>,
     ) -> Result<MessageId, EspError> {
-        ::log::info!(
+        ::log::debug!(
             "Publishing to topic: {}, qos: {:?}, retain: {}, payload length: {}, config: {:?}",
             topic.to_str().unwrap_or("Invalid UTF-8"),
             qos,
